@@ -20,45 +20,99 @@ public class Main
 			fr.close();
 		}catch (Exception e){}
 
+		mainController mainapp = new mainController();
+
 		ArrayList<DeliveryShop> shopList = new ArrayList<>();
 
 		SellerThread s1 = new SellerThread();
 		SellerThread s2 = new SellerThread();
 
 		DeliveryThread d1 = new DeliveryThread();
-
-		shopList.add(new DeliveryShop());
-		shopList.add(new DeliveryShop());
-
-		AtomicBoolean instate = new AtomicBoolean(true);
-		AtomicBoolean outstate = new AtomicBoolean(true);
-
-		CyclicBarrier barrier = new CyclicBarrier(2);
+		DeliveryThread d2 = new DeliveryThread();		
 		
-		d1.setShop(shopList.get(1));
-		d1.setMyState(instate);
-		d1.setOtherState(outstate);
-		d1.setMaxDay(2);
+		shopList.add(new DeliveryShop());
+		shopList.add(new DeliveryShop());
+
+		AtomicBoolean instate = new AtomicBoolean(false);
+		AtomicBoolean outstate = new AtomicBoolean(false);
+
+		CyclicBarrier dropFinish = new CyclicBarrier(2);
+		CyclicBarrier deliveryFinish = new CyclicBarrier(2);
+		
+		
+		d1.setShop(shopList.get(0));
+		d1.setOutState(outstate);
+		d1.setInState(instate);
+		d1.setBarrier(deliveryFinish);
+		d1.setController(mainapp);
+		d1.setMaxDay(3);
+
+		d2.setShop(shopList.get(1));
+		d2.setOutState(outstate);
+		d2.setInState(instate);
+		d2.setBarrier(deliveryFinish);
+		d2.setMaxDay(3);
+		
 
 		s1.setShop(shopList);
-		s1.setMyState(instate);
-		s1.setOtherState(outstate);
-		s1.setMaxDay(2);
+		s1.setInState(instate);
+		s1.setOutState(outstate);
+		s1.setBarrier(dropFinish);
+		d2.setController(mainapp);
+		s1.setMaxDay(3);
 	
 		
 		s2.setShop(shopList);
-		s2.setMyState(instate);
-		s2.setOtherState(outstate);
-		s2.setMaxDay(2);
+		s2.setInState(instate);
+		s2.setOutState(outstate);
+		s2.setBarrier(dropFinish);
+		s2.setMaxDay(3);
 		
 
 		s1.start();	
 		s2.start();
-		try{s1.join();s2.join();}catch(Exception e){}
-		d1.start();
 
+		d1.start();
+		d2.start();
+
+		int round = 1;
+
+		while(round < 3)
+		{
+			mainapp.day(instate,outstate,round);
+			round++;
+			instate.compareAndSet(false,true);
+			for(int i=0;i<shopList.size();i++)shopList.get(i).wake();
+
+		}
+	
+		try{ s1.join(); s2.join(); }catch(Exception e){}
+		System.out.println(s1.isRunning());
+		mainapp.wake();
 					
 	}
+
+}
+
+class mainController
+{
+	public void day(AtomicBoolean inRunning, AtomicBoolean outRunning, int day)
+	{
+		while(inRunning.get() || outRunning.get())
+		{
+			synchronized(this)
+			{
+				try{ wait(); }catch (Exception e) {}
+			}
+		}
+		System.out.println("Day " + day);
+	}
+
+	synchronized public void wake()
+	{
+		notifyAll();
+	}
+
 }
 
 class Fleet
@@ -78,8 +132,8 @@ class Fleet
 
 class SellerThread extends Thread
 {
-	private AtomicBoolean Seller;
-	private AtomicBoolean Deliver;
+	private AtomicBoolean inRunning;
+	private AtomicBoolean outRunning;
 
 	private int round = 1;
 	private int sim_day;
@@ -89,70 +143,72 @@ class SellerThread extends Thread
 	private CyclicBarrier barrier;
 
 	public void setShop(ArrayList<DeliveryShop> shop)	{ sharedShop = shop; }
-	public void setMyState(AtomicBoolean state)		{ Seller  = state; }
-	public void setOtherState(AtomicBoolean state)		{ Deliver = state; }
+	public void setInState(AtomicBoolean state)		{ inRunning  = state; }
+	public void setOutState(AtomicBoolean state)		{ outRunning = state; }
 	public void setMaxDay(int day)				{ sim_day = day; }
 	public void setBarrier(CyclicBarrier br)		{ barrier = br; }
 	public void setParcel(int max_parcel)			{ this.max_parcel = max_parcel; }
 
-	public int getCurrentDay()				{ return round; }	
+	public int getCurrentDay()				{ return round; }
+	public Boolean isRunning()			{ return inRunning.get();}	
 
 	@Override
 	public void run()
 	{
 		while(round < sim_day)
-		{
-			while(!Seller.get())
-			{	synchronized(this)
-				{
-					try { wait(); }catch (InterruptedException | IllegalMonitorStateException e){Seller.compareAndSet(false,true);}
-				}
-			}
-
+		{	
 			sharedShop.get(new Random().nextInt(0,sharedShop.size())).addParcel(10);
 			round++;
-			//Seller.compareAndSet(true,false);
-			Deliver.compareAndSet(false,true);
-			
+
+			try { barrier.await(); }catch(Exception e){};
+			inRunning.compareAndSet(true,false);
+			outRunning.compareAndSet(false,true);
+			for(int i=0;i<sharedShop.size();i++)sharedShop.get(i).wake();
 		}
 	}
 }
 
 class DeliveryThread extends Thread
 {
-	private AtomicBoolean Deliver;
-	private AtomicBoolean Seller;
+	private AtomicBoolean inRunning;
+	private AtomicBoolean outRunning;
 
 	private int round = 1;
 	private int sim_day;
 	
 	private CyclicBarrier barrier;
 	private DeliveryShop managedShop;
+	private mainController main;
 
 	public void setShop(DeliveryShop shop)			{ managedShop = shop; }
-	public void setMyState(AtomicBoolean state)		{ Deliver = state; }
-	public void setOtherState(AtomicBoolean state)		{ Seller = state; }
+	public void setBarrier(CyclicBarrier br)		{ barrier = br; }
+	public void setInState(AtomicBoolean state)		{ inRunning = state; }
+	public void setOutState(AtomicBoolean state)		{ outRunning = state; }
 	public void setMaxDay(int day)				{ sim_day = day; }
+	public void setController(mainController m)		{ main = m; }
 
-	public int getCurrentDay()				{ return round; }	
+	public int getCurrentDay()				{ return round; }
+	public Boolean isRunning()				{ return outRunning.get(); }
 
 	
 	@Override
 	public void run()
 	{
 		while(round < sim_day)
-		{
-			while(!Deliver.get())
-			{	synchronized(this)
-				{
-					try { wait(); }catch (InterruptedException e){Deliver.compareAndSet(false,true);}
-				}
-			}
+		{	
 			managedShop.report();
-			System.out.println(getName() + "  >>  " + round);
+
+			try{ barrier.await(); }catch(Exception e){}
+			//managedShop.subParcel();
+			
 			round++;
-			Deliver.compareAndSet(true,false);
-			Seller.compareAndSet(false,true);
+			try{ barrier.await(); }catch(Exception e){}
+			
+
+			//inRunning.compareAndSet(false,true);
+			outRunning.compareAndSet(true,false);
+			managedShop.wake();
+			main.wake();
 		}
 	}
 
@@ -161,27 +217,51 @@ class DeliveryThread extends Thread
 class DeliveryShop
 {
 	private int parcel = 0;
-	private AtomicInteger sharedCourier;
-	private int max_load;
+	private Fleet sharedFleet;
 	private String type;
 	
-	public synchronized void addParcel(int max_parcel)
+	synchronized public void addParcel(int max_parcel)
 	{	
 		SellerThread me = (SellerThread)Thread.currentThread();
+		
+		while (!me.isRunning())
+		{
+           	 	//System.out.printf("%s >> waits \n\n", me.getName());
+            		try { wait(); } catch(Exception e) { }
+		}
+		
+		//System.out.printf("%s >> is released \n\n", me.getName());	
+		
 		int d_parcel = new Random().nextInt(1,max_parcel);
 		parcel += d_parcel;
-		System.out.println(me.getName() + " " + d_parcel + " " + parcel + " " +me.getCurrentDay());
+		System.out.println(me.getName() + "  >>  dropped " + d_parcel + " total parcel: " + parcel + " day: " + me.getCurrentDay() + " " + me.isRunning() );
 	}
 
-	public synchronized void subParcel()
+	synchronized public void wake()
+	{
+		notifyAll();
+	}
+
+	synchronized public void subParcel()
 	{
 		DeliveryThread me = (DeliveryThread)Thread.currentThread();
 
 	}
 
-	public synchronized void report()
+	synchronized public void report()
 	{
 		DeliveryThread me = (DeliveryThread)Thread.currentThread();
-		System.out.println(me.getName() + "  >>  parcel to deliver = " + parcel); 
+		
+		while (!me.isRunning())
+		{
+           	 	//System.out.printf("%s >> waits \n\n", me.getName());
+            		try { wait(); } catch(Exception e) { }
+		}
+		
+		//System.out.printf("%s >> is released \n\n", me.getName());	
+		
+		System.out.println(me.getName() + "  >>  parcel to deliver: " + parcel);
+
+		if(!me.isRunning())notifyAll();
 	}
 }

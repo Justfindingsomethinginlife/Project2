@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,85 +12,159 @@ public class Main
 {
 	public static void main(String[] args)
 	{	
-		File fp = new File("src/main/java/config_1.txt");
-		
-		try
-		{
-			Scanner fr = new Scanner(fp);
-			System.out.println(fr.nextLine());
-			fr.close();
-		}catch (Exception e){}
+	
 
+		Scanner fr;
+		Scanner keyboard = new Scanner(System.in);
+		String path = "src/main/java/";
+		String filename = "config_1.txt";
+		
+		int sim_days=0;
+		int bike_max_load=0, bike_num=0;
+		int truck_max_load=0, truck_num=0;
+		int seller_max_drop=0, seller_num=0;
+		int bikes_delivery=0, truck_delivery=0;
+
+
+
+		Boolean opensuccess = false;
+        	while (!opensuccess)
+        	{
+            		try(
+                		Scanner fscan = new Scanner(new File(path + filename));
+            		){
+                		opensuccess = true;                
+                		while(fscan.hasNextLine())  
+                		{	 
+                    			String ln = fscan.nextLine();
+					String [] col = ln.split(",");
+					switch(col[0].trim())
+					{
+						case "days":
+							sim_days = Integer.parseInt(col[1].trim());
+							break;
+						case "bike_num_maxload":
+							bike_num = Integer.parseInt(col[1].trim());
+							bike_max_load = Integer.parseInt(col[2].trim());
+							break;
+						case "truck_num_maxload":
+							truck_num = Integer.parseInt(col[1].trim());
+							truck_max_load = Integer.parseInt(col[2].trim());
+							break;
+						case "seller_num_maxdrop":
+							seller_num = Integer.parseInt(col[1].trim());
+							seller_max_drop = Integer.parseInt(col[2].trim());
+							break;
+						case "delivery_bybike_bytruck":
+							bikes_delivery = Integer.parseInt(col[1].trim());
+							truck_delivery = Integer.parseInt(col[2].trim());
+							break;
+					}	
+				}
+			}
+           	 	catch (FileNotFoundException e) 
+            		{
+                		System.out.println(e);
+                		System.out.println("New file name = ");
+                		filename = keyboard.next();
+            		}
+		}
+
+		System.out.println(sim_days + " " + bike_max_load + " " + bike_num + " " + truck_max_load + " " + truck_num + " " + seller_max_drop + " " + seller_num);
+		
+		Fleet BikeFleet = new Fleet(bike_num,bike_max_load,"bike");
+		Fleet TruckFleet = new Fleet(truck_num,truck_max_load,"truck");
+		
 		mainController mainapp = new mainController();
-
-		ArrayList<DeliveryShop> shopList = new ArrayList<>();
-
-		SellerThread s1 = new SellerThread();
-		SellerThread s2 = new SellerThread();
-
-		DeliveryThread d1 = new DeliveryThread();
-		DeliveryThread d2 = new DeliveryThread();		
-		
-		shopList.add(new DeliveryShop());
-		shopList.add(new DeliveryShop());
 
 		AtomicBoolean instate = new AtomicBoolean(false);
 		AtomicBoolean outstate = new AtomicBoolean(false);
 
-		CyclicBarrier dropFinish = new CyclicBarrier(2);
+		CyclicBarrier dropFinish = new CyclicBarrier(seller_num);
 		CyclicBarrier deliveryFinish = new CyclicBarrier(2);
+
+		ArrayList<DeliveryShop> shopList = new ArrayList<>();
+		ArrayList<SellerThread> sellerList = new ArrayList<>();
+		ArrayList<DeliveryThread> deliveryList = new ArrayList<>();
+
+		shopList.add(new DeliveryShop(BikeFleet,BikeFleet.getType()));
+		shopList.add(new DeliveryShop(TruckFleet,TruckFleet.getType()));
+
+		for(int i=0;i<seller_num;i++)
+		{
+			SellerThread s_tmp = new SellerThread("Seller_"+i);
+			s_tmp.setShop(shopList);
+			s_tmp.setInState(instate);
+			s_tmp.setOutState(outstate);
+			s_tmp.setBarrier(dropFinish);
+			s_tmp.setMaxDay(sim_days);
+			s_tmp.setMaxParcel(seller_max_drop);
+			sellerList.add(s_tmp);
+		}
+
+		int bike_count = 0;
+		int truck_count = 0;
+
+		for(int i=0;i<shopList.size();i++)
+		{	
+			int index=0;
+			if(shopList.get(i).getType().equals("bike")){index=bike_count;bike_count++;}
+			else if(shopList.get(i).getType().equals("truck")){index = truck_count;truck_count++;}
+			DeliveryThread d_tmp = new DeliveryThread(shopList.get(i).getType() + "Delivery_"+ index);	
+			d_tmp.setShop(shopList.get(i));
+			d_tmp.setOutState(outstate);
+			d_tmp.setInState(instate);
+			d_tmp.setBarrier(deliveryFinish);
+			d_tmp.setController(mainapp);
+			d_tmp.setMaxDay(sim_days);
+			shopList.get(i).setName(d_tmp.getName());
+
+			deliveryList.add(d_tmp);
+		}
+
+		System.out.printf("%20s  >>  %10s Parameters %10s\n", Thread.currentThread().getName(),"=".repeat(20), "=".repeat(20));
+		System.out.printf("%20s  >>  days of simulation = %d\n",Thread.currentThread().getName() ,sim_days);
+		System.out.printf("%20s  >>  %-5s Fleet total bikes  = %3d, max load = %3d parcels, min load = %3d parcels\n",Thread.currentThread().getName(), "Bike", BikeFleet.getNumber(), BikeFleet.getMaxLoad(),BikeFleet.getMaxLoad()/2);
+		System.out.printf("%20s  >>  %-5s Fleet total bikes  = %3d, max load = %3d parcels, min load = %3d parcels\n",Thread.currentThread().getName(), "Truck", TruckFleet.getNumber(), TruckFleet.getMaxLoad(),TruckFleet.getMaxLoad()/2);
+
+		{	
+			String ln="[";
+			for(int i=0;i<seller_num;i++)
+			{
+				ln += sellerList.get(i).getName();
+				ln += ", ";
+			}
+			ln = ln.substring(0, ln.length() - 2);
+			ln += "]";
+			System.out.printf("%20s  >>  %-15s = %s\n",Thread.currentThread().getName(), "SellerThreads",ln);
+		}
+			System.out.printf("%20s  >>  %-15s = %3d\n",Thread.currentThread().getName(), "max_parcel_drop",seller_max_drop);
 		
+		{	
+			String ln="[";
+			for(int i=0;i<deliveryList.size();i++)
+			{
+				ln += deliveryList.get(i).getName();
+				ln += ", ";
+			}
+			ln = ln.substring(0, ln.length() - 2);
+			ln += "]";
+			System.out.printf("%20s  >>  %-15s = %s\n",Thread.currentThread().getName(), "SellerThreads",ln);
+		}		for(int i=0;i<deliveryList.size();i++)deliveryList.get(i).start();
+		for(int i=0;i<sellerList.size();i++)sellerList.get(i).start();
+
+		int round=1;
 		
-		d1.setShop(shopList.get(0));
-		d1.setOutState(outstate);
-		d1.setInState(instate);
-		d1.setBarrier(deliveryFinish);
-		d1.setController(mainapp);
-		d1.setMaxDay(3);
-
-		d2.setShop(shopList.get(1));
-		d2.setOutState(outstate);
-		d2.setInState(instate);
-		d2.setBarrier(deliveryFinish);
-		d2.setMaxDay(3);
-		
-
-		s1.setShop(shopList);
-		s1.setInState(instate);
-		s1.setOutState(outstate);
-		s1.setBarrier(dropFinish);
-		d2.setController(mainapp);
-		s1.setMaxDay(3);
-	
-		
-		s2.setShop(shopList);
-		s2.setInState(instate);
-		s2.setOutState(outstate);
-		s2.setBarrier(dropFinish);
-		s2.setMaxDay(3);
-		
-
-		s1.start();	
-		s2.start();
-
-		d1.start();
-		d2.start();
-
-		int round = 1;
-
-		while(round < 3)
+		while(round <= sim_days)
 		{
 			mainapp.day(instate,outstate,round);
 			round++;
 			instate.compareAndSet(false,true);
+			BikeFleet.setNumber(bike_num);
+			TruckFleet.setNumber(truck_num);
 			for(int i=0;i<shopList.size();i++)shopList.get(i).wake();
-
 		}
-	
-		try{ s1.join(); s2.join(); }catch(Exception e){}
-		System.out.println(s1.isRunning());
-		mainapp.wake();
-					
+		
 	}
 
 }
@@ -98,6 +173,7 @@ class mainController
 {
 	public void day(AtomicBoolean inRunning, AtomicBoolean outRunning, int day)
 	{
+		Thread me = Thread.currentThread();
 		while(inRunning.get() || outRunning.get())
 		{
 			synchronized(this)
@@ -105,7 +181,11 @@ class mainController
 				try{ wait(); }catch (Exception e) {}
 			}
 		}
-		System.out.println("Day " + day);
+
+		System.out.printf("%20s  >>  \n", me.getName());
+		System.out.printf("%20s  >>  Day %d\n", me.getName(), day);
+		System.out.printf("%20s  >>  %20s\n", me.getName(),"=".repeat(52));
+	
 	}
 
 	synchronized public void wake()
@@ -121,6 +201,8 @@ class Fleet
 	private int max_load;
 	private String type;
 
+	public Fleet(int num, int load, String type)		{ number = num; max_load = load; this.type = type; }
+
 	public void setNumber(int number)			{ this.number = number; }
 	public void setMaxLoad(int max_load)			{ this.max_load = max_load; }
 	public void setType(String type)			{ this.type = type; }
@@ -128,6 +210,19 @@ class Fleet
 	public int getNumber()					{ return number; }
 	public int getMaxLoad()					{ return max_load; }
 	public String getType()					{ return type; }
+
+	public int allocateDelivery(int parcel)
+	{	
+		int delivered = (parcel/max_load);
+
+		if(parcel%max_load >= max_load/2)delivered++;
+		
+		//System.out.println(delivered);
+		number -= delivered;
+		if(delivered*max_load > parcel)return parcel;
+		
+		return delivered*max_load;
+	}
 }
 
 class SellerThread extends Thread
@@ -142,22 +237,24 @@ class SellerThread extends Thread
 	private ArrayList<DeliveryShop> sharedShop;
 	private CyclicBarrier barrier;
 
+	public SellerThread(String name)			{ super(name); }
+
 	public void setShop(ArrayList<DeliveryShop> shop)	{ sharedShop = shop; }
 	public void setInState(AtomicBoolean state)		{ inRunning  = state; }
 	public void setOutState(AtomicBoolean state)		{ outRunning = state; }
 	public void setMaxDay(int day)				{ sim_day = day; }
 	public void setBarrier(CyclicBarrier br)		{ barrier = br; }
-	public void setParcel(int max_parcel)			{ this.max_parcel = max_parcel; }
+	public void setMaxParcel(int max_parcel)		{ this.max_parcel = max_parcel; }
 
 	public int getCurrentDay()				{ return round; }
-	public Boolean isRunning()			{ return inRunning.get();}	
+	public Boolean isRunning()				{ return inRunning.get(); }	
 
 	@Override
 	public void run()
 	{
-		while(round < sim_day)
+		while(round <= sim_day)
 		{	
-			sharedShop.get(new Random().nextInt(0,sharedShop.size())).addParcel(10);
+			sharedShop.get(new Random().nextInt(0,sharedShop.size())).addParcel(20);
 			round++;
 
 			try { barrier.await(); }catch(Exception e){};
@@ -180,6 +277,8 @@ class DeliveryThread extends Thread
 	private DeliveryShop managedShop;
 	private mainController main;
 
+	public DeliveryThread(String name)			{ super(name); }
+
 	public void setShop(DeliveryShop shop)			{ managedShop = shop; }
 	public void setBarrier(CyclicBarrier br)		{ barrier = br; }
 	public void setInState(AtomicBoolean state)		{ inRunning = state; }
@@ -194,12 +293,12 @@ class DeliveryThread extends Thread
 	@Override
 	public void run()
 	{
-		while(round < sim_day)
+		while(round <= sim_day)
 		{	
 			managedShop.report();
 
 			try{ barrier.await(); }catch(Exception e){}
-			//managedShop.subParcel();
+			managedShop.subParcel();
 			
 			round++;
 			try{ barrier.await(); }catch(Exception e){}
@@ -211,7 +310,6 @@ class DeliveryThread extends Thread
 			main.wake();
 		}
 	}
-
 }
 
 class DeliveryShop
@@ -219,6 +317,17 @@ class DeliveryShop
 	private int parcel = 0;
 	private Fleet sharedFleet;
 	private String type;
+	private String name;
+
+	public String getType()					{ return sharedFleet.getType(); }
+	
+	public void setName(String name)			{ this.name = name; }
+
+	public DeliveryShop(Fleet ft, String type)
+	{
+		sharedFleet = ft;
+		this.type   = type;
+	}
 	
 	synchronized public void addParcel(int max_parcel)
 	{	
@@ -226,15 +335,12 @@ class DeliveryShop
 		
 		while (!me.isRunning())
 		{
-           	 	//System.out.printf("%s >> waits \n\n", me.getName());
             		try { wait(); } catch(Exception e) { }
 		}
-		
-		//System.out.printf("%s >> is released \n\n", me.getName());	
-		
+			
 		int d_parcel = new Random().nextInt(1,max_parcel);
 		parcel += d_parcel;
-		System.out.println(me.getName() + "  >>  dropped " + d_parcel + " total parcel: " + parcel + " day: " + me.getCurrentDay() + " " + me.isRunning() );
+		System.out.printf("%20s  >>  drop %3d parcels at %-20s shop\n", me.getName(), d_parcel, name);
 	}
 
 	synchronized public void wake()
@@ -245,7 +351,9 @@ class DeliveryShop
 	synchronized public void subParcel()
 	{
 		DeliveryThread me = (DeliveryThread)Thread.currentThread();
-
+		int d_parcel = sharedFleet.allocateDelivery(parcel);
+		parcel -= d_parcel;
+		System.out.printf("%20s  >>  deliver %3d parcels by %3d %-5s     remaining parcels = %3d, remaining %-5s = %3d\n",me.getName(), d_parcel, (d_parcel + sharedFleet.getMaxLoad() -1)/sharedFleet.getMaxLoad(), sharedFleet.getType(), parcel, sharedFleet.getType(), sharedFleet.getNumber());
 	}
 
 	synchronized public void report()
@@ -254,14 +362,8 @@ class DeliveryShop
 		
 		while (!me.isRunning())
 		{
-           	 	//System.out.printf("%s >> waits \n\n", me.getName());
             		try { wait(); } catch(Exception e) { }
 		}
-		
-		//System.out.printf("%s >> is released \n\n", me.getName());	
-		
-		System.out.println(me.getName() + "  >>  parcel to deliver: " + parcel);
-
-		if(!me.isRunning())notifyAll();
+		System.out.printf("%20s  >>      parcels to deliver = %3d\n",me.getName(), parcel);
 	}
 }

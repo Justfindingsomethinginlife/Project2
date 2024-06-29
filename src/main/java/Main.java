@@ -71,7 +71,7 @@ public class Main
             		}
 		}
 
-		System.out.println(sim_days + " " + bike_max_load + " " + bike_num + " " + truck_max_load + " " + truck_num + " " + seller_max_drop + " " + seller_num);
+		//System.out.println(sim_days + " " + bike_max_load + " " + bike_num + " " + truck_max_load + " " + truck_num + " " + seller_max_drop + " " + seller_num);
 		
 		Fleet BikeFleet = new Fleet(bike_num,bike_max_load,"bike");
 		Fleet TruckFleet = new Fleet(truck_num,truck_max_load,"truck");
@@ -150,7 +150,7 @@ public class Main
 			}
 			ln = ln.substring(0, ln.length() - 2);
 			ln += "]";
-			System.out.printf("%20s  >>  %-15s = %s\n",Thread.currentThread().getName(), "SellerThreads",ln);
+			System.out.printf("%20s  >>  %-15s = %s\n",Thread.currentThread().getName(), "DeliveryThreads",ln);
 		}		for(int i=0;i<deliveryList.size();i++)deliveryList.get(i).start();
 		for(int i=0;i<sellerList.size();i++)sellerList.get(i).start();
 
@@ -235,7 +235,13 @@ class Fleet
 		if(parcel%max_load >= max_load/2)delivered++;
 		
 		//System.out.println(delivered);
-		number -= delivered;
+		if(delivered <= number)number -= delivered;
+                else 
+                {
+                    int tmp = number;
+                    number = 0;
+                    return tmp*max_load;
+                }
 		if(delivered*max_load > parcel)return parcel;
 		
 		return delivered*max_load;
@@ -271,7 +277,7 @@ class SellerThread extends Thread
 	{
 		while(round <= sim_day)
 		{	
-			sharedShop.get(new Random().nextInt(0,sharedShop.size())).addParcel(20);
+			sharedShop.get(new Random().nextInt(0,sharedShop.size())).addParcel(max_parcel);
 			round++;
 
 			try { barrier.await(); }catch(Exception e){};

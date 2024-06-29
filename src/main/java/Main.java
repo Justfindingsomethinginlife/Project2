@@ -1,10 +1,11 @@
+package Project2_6681012;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CyclicBarrier;
 import java.util.ArrayList;
 
@@ -16,7 +17,7 @@ public class Main
 
 		Scanner fr;
 		Scanner keyboard = new Scanner(System.in);
-		String path = "src/main/java/";
+		String path = "src/main/java/Project2_6681012/";
 		String filename = "config_1.txt";
 		
 		int sim_days=0;
@@ -81,15 +82,15 @@ public class Main
 		AtomicBoolean outstate = new AtomicBoolean(false);
 
 		CyclicBarrier dropFinish = new CyclicBarrier(seller_num);
-		CyclicBarrier deliveryFinish = new CyclicBarrier(2);
+		CyclicBarrier deliveryFinish = new CyclicBarrier(bikes_delivery + truck_delivery);
 
 		ArrayList<DeliveryShop> shopList = new ArrayList<>();
 		ArrayList<SellerThread> sellerList = new ArrayList<>();
 		ArrayList<DeliveryThread> deliveryList = new ArrayList<>();
 
-		shopList.add(new DeliveryShop(BikeFleet,BikeFleet.getType()));
-		shopList.add(new DeliveryShop(TruckFleet,TruckFleet.getType()));
-
+		for(int i=0;i<bikes_delivery;i++)shopList.add(new DeliveryShop(BikeFleet,BikeFleet.getType()));
+                for(int i=0;i<truck_delivery;i++)shopList.add(new DeliveryShop(TruckFleet,TruckFleet.getType()));
+                
 		for(int i=0;i<seller_num;i++)
 		{
 			SellerThread s_tmp = new SellerThread("Seller_"+i);
@@ -164,7 +165,23 @@ public class Main
 			TruckFleet.setNumber(truck_num);
 			for(int i=0;i<shopList.size();i++)shopList.get(i).wake();
 		}
-		
+                
+                try {
+            for (DeliveryThread dThread : deliveryList) {
+                dThread.join();
+            }
+            for (SellerThread sThread : sellerList) {
+                sThread.join();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
+        System.out.printf("%20s  >>  \n", Thread.currentThread().getName());
+        System.out.printf("%20s  >>  %20s\n", Thread.currentThread().getName(), "=".repeat(52));
+        System.out.printf("%20s  >>  Summary \n", Thread.currentThread().getName());
+        for (DeliveryThread dThread : deliveryList) System.out.printf("%20s  >>  %-20s  %10s %5d, %s %5d, %s  %.2f\n", Thread.currentThread().getName(), dThread.getName(), "Received:" , dThread.getParcelsReceived(), "Delivered:", dThread.getParcelsDelivered(), "Success rate:", dThread.getParcelsReceived() == 0 ? 0.0 : ((double)dThread.getParcelsDelivered() / dThread.getParcelsReceived()));
+        
 	}
 
 }
@@ -272,6 +289,9 @@ class DeliveryThread extends Thread
 
 	private int round = 1;
 	private int sim_day;
+        
+        private int parcelsReceived = 0;
+        private int parcelsDelivered = 0;
 	
 	private CyclicBarrier barrier;
 	private DeliveryShop managedShop;
@@ -288,8 +308,15 @@ class DeliveryThread extends Thread
 
 	public int getCurrentDay()				{ return round; }
 	public Boolean isRunning()				{ return outRunning.get(); }
+        
+        public int getParcelsReceived() {
+            return parcelsReceived;
+        }
 
-	
+        public int getParcelsDelivered() {
+            return parcelsDelivered;
+        }
+
 	@Override
 	public void run()
 	{
@@ -298,7 +325,9 @@ class DeliveryThread extends Thread
 			managedShop.report();
 
 			try{ barrier.await(); }catch(Exception e){}
-			managedShop.subParcel();
+			parcelsReceived += managedShop.getParcelCount();
+                        managedShop.subParcel();
+                        parcelsDelivered += managedShop.getDeliveredCount();
 			
 			round++;
 			try{ barrier.await(); }catch(Exception e){}
@@ -315,6 +344,7 @@ class DeliveryThread extends Thread
 class DeliveryShop
 {
 	private int parcel = 0;
+        private int deliveredCount;
 	private Fleet sharedFleet;
 	private String type;
 	private String name;
@@ -353,6 +383,7 @@ class DeliveryShop
 		DeliveryThread me = (DeliveryThread)Thread.currentThread();
 		int d_parcel = sharedFleet.allocateDelivery(parcel);
 		parcel -= d_parcel;
+                deliveredCount = d_parcel;       
 		System.out.printf("%20s  >>  deliver %3d parcels by %3d %-5s     remaining parcels = %3d, remaining %-5s = %3d\n",me.getName(), d_parcel, (d_parcel + sharedFleet.getMaxLoad() -1)/sharedFleet.getMaxLoad(), sharedFleet.getType(), parcel, sharedFleet.getType(), sharedFleet.getNumber());
 	}
 
@@ -366,4 +397,12 @@ class DeliveryShop
 		}
 		System.out.printf("%20s  >>      parcels to deliver = %3d\n",me.getName(), parcel);
 	}
+        
+        synchronized public int getParcelCount() {
+            return parcel;
+        }
+
+        synchronized public int getDeliveredCount() {
+            return deliveredCount;
+        }
 }

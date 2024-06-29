@@ -8,181 +8,194 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.CyclicBarrier;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class Main
 {
 	public static void main(String[] args)
 	{	
-	
-
-		Scanner fr;
-		Scanner keyboard = new Scanner(System.in);
-		String path = "src/main/java/Project2_6681012/";
-		String filename = "config_1.txt";
-		
-		int sim_days=0;
-		int bike_max_load=0, bike_num=0;
-		int truck_max_load=0, truck_num=0;
-		int seller_max_drop=0, seller_num=0;
-		int bikes_delivery=0, truck_delivery=0;
-
-
-
-		Boolean opensuccess = false;
-        	while (!opensuccess)
-        	{
-            		try(
-                		Scanner fscan = new Scanner(new File(path + filename));
-            		){
-                		opensuccess = true;                
-                		while(fscan.hasNextLine())  
-                		{	 
-                    			String ln = fscan.nextLine();
-					String [] col = ln.split(",");
-					switch(col[0].trim())
-					{
-						case "days":
-							sim_days = Integer.parseInt(col[1].trim());
-							break;
-						case "bike_num_maxload":
-							bike_num = Integer.parseInt(col[1].trim());
-							bike_max_load = Integer.parseInt(col[2].trim());
-							break;
-						case "truck_num_maxload":
-							truck_num = Integer.parseInt(col[1].trim());
-							truck_max_load = Integer.parseInt(col[2].trim());
-							break;
-						case "seller_num_maxdrop":
-							seller_num = Integer.parseInt(col[1].trim());
-							seller_max_drop = Integer.parseInt(col[2].trim());
-							break;
-						case "delivery_bybike_bytruck":
-							bikes_delivery = Integer.parseInt(col[1].trim());
-							truck_delivery = Integer.parseInt(col[2].trim());
-							break;
-					}	
-				}
-			}
-           	 	catch (FileNotFoundException e) 
-            		{
-                		System.out.println(e);
-                		System.out.println("New file name = ");
-                		filename = keyboard.next();
-            		}
-		}
-
-		//System.out.println(sim_days + " " + bike_max_load + " " + bike_num + " " + truck_max_load + " " + truck_num + " " + seller_max_drop + " " + seller_num);
-		
-		Fleet BikeFleet = new Fleet(bike_num,bike_max_load,"bike");
-		Fleet TruckFleet = new Fleet(truck_num,truck_max_load,"truck");
-		
-		mainController mainapp = new mainController();
-
-		AtomicBoolean instate = new AtomicBoolean(false);
-		AtomicBoolean outstate = new AtomicBoolean(false);
-
-		CyclicBarrier dropFinish = new CyclicBarrier(seller_num);
-		CyclicBarrier deliveryFinish = new CyclicBarrier(bikes_delivery + truck_delivery);
-
-		ArrayList<DeliveryShop> shopList = new ArrayList<>();
-		ArrayList<SellerThread> sellerList = new ArrayList<>();
-		ArrayList<DeliveryThread> deliveryList = new ArrayList<>();
-
-		for(int i=0;i<bikes_delivery;i++)shopList.add(new DeliveryShop(BikeFleet,BikeFleet.getType()));
-                for(int i=0;i<truck_delivery;i++)shopList.add(new DeliveryShop(TruckFleet,TruckFleet.getType()));
-                
-		for(int i=0;i<seller_num;i++)
-		{
-			SellerThread s_tmp = new SellerThread("Seller_"+i);
-			s_tmp.setShop(shopList);
-			s_tmp.setInState(instate);
-			s_tmp.setOutState(outstate);
-			s_tmp.setBarrier(dropFinish);
-			s_tmp.setMaxDay(sim_days);
-			s_tmp.setMaxParcel(seller_max_drop);
-			sellerList.add(s_tmp);
-		}
-
-		int bike_count = 0;
-		int truck_count = 0;
-
-		for(int i=0;i<shopList.size();i++)
-		{	
-			int index=0;
-			if(shopList.get(i).getType().equals("bike")){index=bike_count;bike_count++;}
-			else if(shopList.get(i).getType().equals("truck")){index = truck_count;truck_count++;}
-			DeliveryThread d_tmp = new DeliveryThread(shopList.get(i).getType() + "Delivery_"+ index);	
-			d_tmp.setShop(shopList.get(i));
-			d_tmp.setOutState(outstate);
-			d_tmp.setInState(instate);
-			d_tmp.setBarrier(deliveryFinish);
-			d_tmp.setController(mainapp);
-			d_tmp.setMaxDay(sim_days);
-			shopList.get(i).setName(d_tmp.getName());
-
-			deliveryList.add(d_tmp);
-		}
-
-		System.out.printf("%20s  >>  %10s Parameters %10s\n", Thread.currentThread().getName(),"=".repeat(20), "=".repeat(20));
-		System.out.printf("%20s  >>  days of simulation = %d\n",Thread.currentThread().getName() ,sim_days);
-		System.out.printf("%20s  >>  %-5s Fleet total bikes  = %3d, max load = %3d parcels, min load = %3d parcels\n",Thread.currentThread().getName(), "Bike", BikeFleet.getNumber(), BikeFleet.getMaxLoad(),BikeFleet.getMaxLoad()/2);
-		System.out.printf("%20s  >>  %-5s Fleet total bikes  = %3d, max load = %3d parcels, min load = %3d parcels\n",Thread.currentThread().getName(), "Truck", TruckFleet.getNumber(), TruckFleet.getMaxLoad(),TruckFleet.getMaxLoad()/2);
-
-		{	
-			String ln="[";
-			for(int i=0;i<seller_num;i++)
-			{
-				ln += sellerList.get(i).getName();
-				ln += ", ";
-			}
-			ln = ln.substring(0, ln.length() - 2);
-			ln += "]";
-			System.out.printf("%20s  >>  %-15s = %s\n",Thread.currentThread().getName(), "SellerThreads",ln);
-		}
-			System.out.printf("%20s  >>  %-15s = %3d\n",Thread.currentThread().getName(), "max_parcel_drop",seller_max_drop);
-		
-		{	
-			String ln="[";
-			for(int i=0;i<deliveryList.size();i++)
-			{
-				ln += deliveryList.get(i).getName();
-				ln += ", ";
-			}
-			ln = ln.substring(0, ln.length() - 2);
-			ln += "]";
-			System.out.printf("%20s  >>  %-15s = %s\n",Thread.currentThread().getName(), "DeliveryThreads",ln);
-		}		for(int i=0;i<deliveryList.size();i++)deliveryList.get(i).start();
-		for(int i=0;i<sellerList.size();i++)sellerList.get(i).start();
-
-		int round=1;
-		
-		while(round <= sim_days)
-		{
-			mainapp.day(instate,outstate,round);
-			round++;
-			instate.compareAndSet(false,true);
-			BikeFleet.setNumber(bike_num);
-			TruckFleet.setNumber(truck_num);
-			for(int i=0;i<shopList.size();i++)shopList.get(i).wake();
-		}
-                
-                try {
-            for (DeliveryThread dThread : deliveryList) {
-                dThread.join();
-            }
-            for (SellerThread sThread : sellerList) {
-                sThread.join();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        
-        System.out.printf("%20s  >>  \n", Thread.currentThread().getName());
-        System.out.printf("%20s  >>  %20s\n", Thread.currentThread().getName(), "=".repeat(52));
-        System.out.printf("%20s  >>  Summary \n", Thread.currentThread().getName());
-        for (DeliveryThread dThread : deliveryList) System.out.printf("%20s  >>  %-20s  %10s %5d, %s %5d, %s  %.2f\n", Thread.currentThread().getName(), dThread.getName(), "Received:" , dThread.getParcelsReceived(), "Delivered:", dThread.getParcelsDelivered(), "Success rate:", dThread.getParcelsReceived() == 0 ? 0.0 : ((double)dThread.getParcelsDelivered() / dThread.getParcelsReceived()));
-        
+           new Main().demo_1(); 
 	}
+        
+        public void demo_1() 
+        {
+            Scanner keyboard = new Scanner(System.in);
+            String path = "src/main/java/Project2_6681012/";
+            String filename = "config_1.txt";
+
+            int sim_days = 0;
+            int bike_max_load = 0, bike_num = 0;
+            int truck_max_load = 0, truck_num = 0;
+            int seller_max_drop = 0, seller_num = 0;
+            int bikes_delivery = 0, truck_delivery = 0;
+
+            Boolean opensuccess = false;
+            while (!opensuccess) {
+                try (
+                        Scanner fscan = new Scanner(new File(path + filename));) {
+                    opensuccess = true;
+                    while (fscan.hasNextLine()) {
+                        String ln = fscan.nextLine();
+                        String[] col = ln.split(",");
+                        switch (col[0].trim()) {
+                            case "days":
+                                sim_days = Integer.parseInt(col[1].trim());
+                                break;
+                            case "bike_num_maxload":
+                                bike_num = Integer.parseInt(col[1].trim());
+                                bike_max_load = Integer.parseInt(col[2].trim());
+                                break;
+                            case "truck_num_maxload":
+                                truck_num = Integer.parseInt(col[1].trim());
+                                truck_max_load = Integer.parseInt(col[2].trim());
+                                break;
+                            case "seller_num_maxdrop":
+                                seller_num = Integer.parseInt(col[1].trim());
+                                seller_max_drop = Integer.parseInt(col[2].trim());
+                                break;
+                            case "delivery_bybike_bytruck":
+                                bikes_delivery = Integer.parseInt(col[1].trim());
+                                truck_delivery = Integer.parseInt(col[2].trim());
+                                break;
+                        }
+                    }
+                } catch (FileNotFoundException e) {
+                    System.out.println(e);
+                    System.out.println("New file name = ");
+                    filename = keyboard.next();
+                }
+            }
+
+            //System.out.println(sim_days + " " + bike_max_load + " " + bike_num + " " + truck_max_load + " " + truck_num + " " + seller_max_drop + " " + seller_num);
+            Fleet BikeFleet = new Fleet(bike_num, bike_max_load, "bike");
+            Fleet TruckFleet = new Fleet(truck_num, truck_max_load, "truck");
+
+            mainController mainapp = new mainController();
+
+            AtomicBoolean instate = new AtomicBoolean(false);
+            AtomicBoolean outstate = new AtomicBoolean(false);
+
+            CyclicBarrier dropFinish = new CyclicBarrier(seller_num);
+            CyclicBarrier deliveryFinish = new CyclicBarrier(bikes_delivery + truck_delivery);
+
+            ArrayList<DeliveryShop> shopList = new ArrayList<>();
+            ArrayList<SellerThread> sellerList = new ArrayList<>();
+            ArrayList<DeliveryThread> deliveryList = new ArrayList<>();
+
+            for (int i = 0; i < bikes_delivery; i++) {
+                shopList.add(new DeliveryShop(BikeFleet, BikeFleet.getType()));
+            }
+            for (int i = 0; i < truck_delivery; i++) {
+                shopList.add(new DeliveryShop(TruckFleet, TruckFleet.getType()));
+            }
+                        
+            for (int i = 0; i < seller_num; i++) {
+                SellerThread s_tmp = new SellerThread("Seller_" + i);
+                s_tmp.setShop(shopList);
+                s_tmp.setInState(instate);
+                s_tmp.setOutState(outstate);
+                s_tmp.setBarrier(dropFinish);
+                s_tmp.setMaxDay(sim_days);
+                s_tmp.setMaxParcel(seller_max_drop);
+                sellerList.add(s_tmp);
+            }
+
+            int bike_count = 0;
+            int truck_count = 0;
+
+            for (int i = 0; i < shopList.size(); i++) {
+                int index = 0;
+                String tmp = "";
+                if (shopList.get(i).getType().equals("bike")) {
+                    index = bike_count;
+                    tmp = "Bike";
+                    bike_count++;
+                } else if (shopList.get(i).getType().equals("truck")) {
+                    index = truck_count;
+                    tmp = "Truck";
+                    truck_count++;
+                }
+                DeliveryThread d_tmp = new DeliveryThread(tmp + "Delivery_" + index);
+                d_tmp.setShop(shopList.get(i));
+                d_tmp.setOutState(outstate);
+                d_tmp.setInState(instate);
+                d_tmp.setBarrier(deliveryFinish);
+                d_tmp.setController(mainapp);
+                d_tmp.setMaxDay(sim_days);
+                shopList.get(i).setName(d_tmp.getName());
+
+                deliveryList.add(d_tmp);
+            }
+
+            System.out.printf("%20s  >>  %10s Parameters %10s\n", Thread.currentThread().getName(), "=".repeat(20), "=".repeat(20));
+            System.out.printf("%20s  >>  days of simulation = %d\n", Thread.currentThread().getName(), sim_days);
+            System.out.printf("%20s  >>  %-5s Fleet total bikes  = %3d, max load = %3d parcels, min load = %3d parcels\n", Thread.currentThread().getName(), "Bike", BikeFleet.getNumber(), BikeFleet.getMaxLoad(), BikeFleet.getMaxLoad() / 2);
+            System.out.printf("%20s  >>  %-5s Fleet total bikes  = %3d, max load = %3d parcels, min load = %3d parcels\n", Thread.currentThread().getName(), "Truck", TruckFleet.getNumber(), TruckFleet.getMaxLoad(), TruckFleet.getMaxLoad() / 2);
+
+            {
+                String ln = "[";
+                for (int i = 0; i < seller_num; i++) {
+                    ln += sellerList.get(i).getName();
+                    ln += ", ";
+                }
+                ln = ln.substring(0, ln.length() - 2);
+                ln += "]";
+                System.out.printf("%20s  >>  %-15s = %s\n", Thread.currentThread().getName(), "SellerThreads", ln);
+            }
+            System.out.printf("%20s  >>  %-15s = %3d\n", Thread.currentThread().getName(), "max_parcel_drop", seller_max_drop);
+
+            {
+                String ln = "[";
+                for (int i = 0; i < deliveryList.size(); i++) {
+                    ln += deliveryList.get(i).getName();
+                    ln += ", ";
+                }
+                ln = ln.substring(0, ln.length() - 2);
+                ln += "]";
+                System.out.printf("%20s  >>  %-15s = %s\n", Thread.currentThread().getName(), "DeliveryThreads", ln);
+            }
+                
+            Collections.shuffle(shopList);
+            
+            for (int i = 0; i < deliveryList.size(); i++) {
+                deliveryList.get(i).start();
+            }
+            for (int i = 0; i < sellerList.size(); i++) {
+                sellerList.get(i).start();
+            }
+
+            int round = 1;
+
+            while (round <= sim_days) {
+                mainapp.day(instate, outstate, round);
+                round++;
+                instate.compareAndSet(false, true);
+                BikeFleet.setNumber(bike_num);
+                TruckFleet.setNumber(truck_num);
+                for (int i = 0; i < shopList.size(); i++) {
+                    shopList.get(i).wake();
+                }
+            }
+
+            try {
+                for (DeliveryThread dThread : deliveryList) {
+                    dThread.join();
+                }
+                for (SellerThread sThread : sellerList) {
+                    sThread.join();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            System.out.printf("%20s  >>  \n", Thread.currentThread().getName());
+            System.out.printf("%20s  >>  %20s\n", Thread.currentThread().getName(), "=".repeat(52));
+            System.out.printf("%20s  >>  Summary \n", Thread.currentThread().getName());
+            for (DeliveryThread dThread : deliveryList) {
+                System.out.printf("%20s  >>  %-20s  %10s %5d, %s %5d, %s  %.2f\n", Thread.currentThread().getName(), dThread.getName(), "Received:", dThread.getParcelsReceived(), "Delivered:", dThread.getParcelsDelivered(), "Success rate:", dThread.getParcelsReceived() == 0 ? 0.0 : ((double) dThread.getParcelsDelivered() / dThread.getParcelsReceived()));
+            }
+
+    }
 
 }
 

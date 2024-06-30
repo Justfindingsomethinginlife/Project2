@@ -1,3 +1,10 @@
+/*
+Gael Daengsangwan 6580591
+Karndanai Udomsiriphocksai 6481324
+Kasidech Thongking 6681012
+Patrapee Maleevech 6580074
+Thanapoom Tanalakwong 6481205
+*/
 package Project2_6681012;
 
 import java.io.File;
@@ -11,14 +18,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class Main
-{
-	public static void main(String[] args)
+{          
+        public static void main(String[] args)
 	{	
            new Main().demo_1(); 
 	}
         
         public void demo_1() 
-        {
+        {   
             Scanner keyboard = new Scanner(System.in);
             String path = "src/main/java/Project2_6681012/";
             String filename = "config_1.txt";
@@ -32,7 +39,7 @@ public class Main
             Boolean opensuccess = false;
             while (!opensuccess) {
                 try (
-                        Scanner fscan = new Scanner(new File(path + filename));) {
+                    Scanner fscan = new Scanner(new File(path + filename));) {
                     opensuccess = true;
                     while (fscan.hasNextLine()) {
                         String ln = fscan.nextLine();
@@ -192,7 +199,7 @@ public class Main
             System.out.printf("%20s  >>  %20s\n", Thread.currentThread().getName(), "=".repeat(52));
             System.out.printf("%20s  >>  Summary \n", Thread.currentThread().getName());
             for (DeliveryThread dThread : deliveryList) {
-                System.out.printf("%20s  >>  %-20s  %10s %5d, %s %5d, %s  %.2f\n", Thread.currentThread().getName(), dThread.getName(), "Received:", dThread.getParcelsReceived(), "Delivered:", dThread.getParcelsDelivered(), "Success rate:", dThread.getParcelsReceived() == 0 ? 0.0 : ((double) dThread.getParcelsDelivered() / dThread.getParcelsReceived()));
+                System.out.printf("%20s  >>  %-20s  %10s %5d, %s %5d, %s  %.2f\n", Thread.currentThread().getName(), dThread.getName(), "Received:", dThread.getManangedShop().getReceivedParcelCount(), "Delivered:", dThread.getParcelsDelivered(), "Success rate:", dThread.getManangedShop().getReceivedParcelCount() == 0 ? 0.0 : ((double) dThread.getParcelsDelivered() / dThread.getManangedShop().getReceivedParcelCount()));
             }
 
     }
@@ -311,6 +318,7 @@ class DeliveryThread extends Thread
         
         private int parcelsReceived = 0;
         private int parcelsDelivered = 0;
+        private int ParcelsLeftover = 0;
 	
 	private CyclicBarrier barrier;
 	private DeliveryShop managedShop;
@@ -326,6 +334,7 @@ class DeliveryThread extends Thread
 	public void setController(mainController m)		{ main = m; }
 
 	public int getCurrentDay()				{ return round; }
+        public DeliveryShop getManangedShop()                   { return managedShop; }
 	public Boolean isRunning()				{ return outRunning.get(); }
         
         public int getParcelsReceived() {
@@ -344,7 +353,6 @@ class DeliveryThread extends Thread
 			managedShop.report();
 
 			try{ barrier.await(); }catch(Exception e){}
-			parcelsReceived += managedShop.getParcelCount();
                         managedShop.subParcel();
                         parcelsDelivered += managedShop.getDeliveredCount();
 			
@@ -364,6 +372,7 @@ class DeliveryShop
 {
 	private int parcel = 0;
         private int deliveredCount;
+        private int receivedCount;
 	private Fleet sharedFleet;
 	private String type;
 	private String name;
@@ -389,6 +398,7 @@ class DeliveryShop
 			
 		int d_parcel = new Random().nextInt(1,max_parcel);
 		parcel += d_parcel;
+                receivedCount += d_parcel;
 		System.out.printf("%20s  >>  drop %3d parcels at %-20s shop\n", me.getName(), d_parcel, name);
 	}
 
@@ -419,6 +429,10 @@ class DeliveryShop
         
         synchronized public int getParcelCount() {
             return parcel;
+        }
+        
+        synchronized public int getReceivedParcelCount() {
+            return receivedCount;
         }
 
         synchronized public int getDeliveredCount() {

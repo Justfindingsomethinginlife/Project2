@@ -1,9 +1,12 @@
+target=
+main_class=
+
 test:
-	javac -d classes/ src/main/java/Project2_6681012/*.java
-	java -cp classes/ Project2_6681012.Main
-project_compile: src/main/java/*.java
-	javac -d classes/ src/main/java/Project2_6681012/*.java
+	javac -d classes/ src/main/java/$(target)/*.java
+	java -cp classes/ $(target).$(main_class)
+project_compile: 
+	javac -d classes/ src/main/java/$(target)/*.java
 run:
-	java -cp classes/ Main	
+	java -cp classes/ $(target).$(main_class)
 clean: *.class
 	rm -f classes/*.class

@@ -1,0 +1,16 @@
+Game:
+	1) at the start you are given X card, a combination of Attack, Healing, and Defensive card to be used.
+	2) you start with 100 HP, 100 SP, 100 MP. MP for special attack for specific character.
+	3) each players takes turn setting up defenses (X slots) and attack other player
+	4) the last man standing is the winner
+Color schemes:
+	1) Green for healing
+	2) Red for attack
+	3) Grey sheild
+	4) Special card (Character based) consumes mana.
+Special Mechanics:
+	1) Unique character
+	2) Cheating
+		2.1) back channel, you will be able to leave a message for other player (privately) to consipire against fellow player
+			- If you are caught you can't play for 2 round and your defenses are compromised along with the consipere.
+		2.2) card locking, maybe not?  

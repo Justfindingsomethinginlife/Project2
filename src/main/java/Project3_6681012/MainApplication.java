@@ -93,12 +93,50 @@ class PlayerFrame extends JFrame implements MouseListener
 		background.setIcon(bg);
 		background.setLayout(null);
 
-		JButton btn1 = new JButton("G");
-		btn1.setBounds(300,100,50,100);
+		ButtonGroup rg = new ButtonGroup();
+
+		JRadioButton btn1 = new JRadioButton("Name1");
+		btn1.setOpaque(false);
+		btn1.setBounds(30,570,100,40);
+
+		JRadioButton btn2 = new JRadioButton("Name2");
+		btn2.setOpaque(false);
+		btn2.setBounds(30,595,100,40);
+
+		JRadioButton btn3 = new JRadioButton("Name3");
+		btn3.setOpaque(false);
+		btn3.setBounds(30,620,100,40);
+
+		JRadioButton btn4 = new JRadioButton("Name4");
+		btn4.setOpaque(false);
+		btn4.setBounds(30,645,100,40);
+		background.repaint();
+
+		JRadioButton btn5 = new JRadioButton("Name5");
+		btn5.setOpaque(false);
+		btn5.setBounds(30,670,100,40);
+
+		JRadioButton btn6 = new JRadioButton("Name6");
+		btn6.setOpaque(false);
+		btn6.setBounds(30,695,100,40);
 
 		background.repaint();
 
+		rg.add(btn1);
+		rg.add(btn2);
+		rg.add(btn3);
+		rg.add(btn4);
+		rg.add(btn5);
+		rg.add(btn6);
+		
+		btn6.setEnabled(false);
+
 		background.add(btn1);
+		background.add(btn2);
+		background.add(btn3);
+		background.add(btn4);
+		background.add(btn5);
+		background.add(btn6);
 
 		Card card1 = new Card("src/main/java/Project3_6681012/resources/Card_TEMP.png",64,96,this);
 		card1.setMoveConditions(100, 100, true, true);

@@ -15,50 +15,50 @@ class w10_1_WinEvent_1 extends JFrame implements MouseListener
 
     public w10_1_WinEvent_1()
     {
-	setTitle("This is a Frame");
-        setSize(700, 400);
-        setLocationRelativeTo(null);
-	setVisible(true);
-	setDefaultCloseOperation( WindowConstants.EXIT_ON_CLOSE );
+        setTitle("This is a Frame");
+            setSize(700, 400);
+            setLocationRelativeTo(null);
+        setVisible(true);
+        setDefaultCloseOperation( WindowConstants.EXIT_ON_CLOSE );
 
-	contentpane = (JPanel)getContentPane();
-	contentpane.setLayout( new FlowLayout() );
-        contentpane.setBackground( Color.GRAY );
+        contentpane = (JPanel)getContentPane();
+        contentpane.setLayout( new FlowLayout() );
+            contentpane.setBackground( Color.GRAY );
 
-	random = new java.util.Random();
-	
-	// ----- (2) add listeners : notice the difference between (2.1), (2.2), (2.3)
+        random = new java.util.Random();
 
-	// ----- (2.1) click anywhere in the frame to add a random bird
-	addMouseListener( this );
+        // ----- (2) add listeners : notice the difference between (2.1), (2.2), (2.3)
 
-	// ----- (2.2) for every 5 birds added, pop up a dialog
-	contentpane.addContainerListener( new MyContainerListener() );
+        // ----- (2.1) click anywhere in the frame to add a random bird
+        addMouseListener( this );
 
-	// ----- (2.3) count total no. of birds when closing the frame
-	addWindowListener( new MyWindowListener() );
-    }
+        // ----- (2.2) for every 5 birds added, pop up a dialog
+        contentpane.addContainerListener( new MyContainerListener() );
 
-    // ----- (1) handlers for MouseListener	
-    public void mousePressed( MouseEvent e )	{ }
-    public void mouseReleased( MouseEvent e )	{ }
-    public void mouseEntered( MouseEvent e )	{ }	
-    public void mouseExited( MouseEvent e )	{ }
+        // ----- (2.3) count total no. of birds when closing the frame
+        addWindowListener( new MyWindowListener() );
+        }
 
-    @Override
-    public void mouseClicked( MouseEvent e )	
-    {
-	int r = random.nextInt(6);
-	JLabel label = new JLabel( new ImageIcon(path + birds[r]) );
-	contentpane.add( label );
-	validate();
-    }
-	
+        // ----- (1) handlers for MouseListener
+        public void mousePressed( MouseEvent e )	{ }
+        public void mouseReleased( MouseEvent e )	{ }
+        public void mouseEntered( MouseEvent e )	{ }
+        public void mouseExited( MouseEvent e )	{ }
 
-    public static void main(String[] args) 
-    {
-	new w10_1_WinEvent_1();
-    }
+        @Override
+        public void mouseClicked( MouseEvent e )
+        {
+            int r = random.nextInt(6);
+            JLabel label = new JLabel( new ImageIcon(path + birds[r]) );
+            contentpane.add( label );
+            validate();
+        }
+
+
+        public static void main(String[] args)
+        {
+            new w10_1_WinEvent_1();
+        }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////

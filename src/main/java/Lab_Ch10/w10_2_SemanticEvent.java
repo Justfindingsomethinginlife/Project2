@@ -61,8 +61,8 @@ class w10_2_SemanticEvent extends JFrame
         
         // ----- (2) Disable action on remove button --> ActionEvent won't be handled
         //           But MouseClick is not disabled  --> MouseEvent is still handled
-        //rem_button.setEnabled(false);
-        /*
+        rem_button.setEnabled(false);
+
 	rem_button.addMouseListener( new MouseAdapter() {
             @Override
             public void mouseClicked( MouseEvent e )
@@ -70,7 +70,7 @@ class w10_2_SemanticEvent extends JFrame
 		drawpane.doRemove();
             }
 	});        
-        */
+
         
 
 	// ----- (3) get no. of birds from combo (use ItemEvent or ActionEvent)
@@ -108,12 +108,12 @@ class w10_2_SemanticEvent extends JFrame
 		{
                     JRadioButton temp = (JRadioButton)e.getItem();
                     if (temp.isSelected())
-                    //if (e.getStateChange() == ItemEvent.SELECTED)
+                    if (e.getStateChange() == ItemEvent.SELECTED)
                     {
                         System.out.printf("outside = %d, inside = %d \n", outsideloop, insideloop);
                         
-			int count = Integer.parseInt( temp.getText() );
-			drawpane.setCount( count );
+                        int count = Integer.parseInt( temp.getText() );
+                        drawpane.setCount( count );
                     }
                     //outsideloop++;        // updated inside inner class
                     //insideloop++;         // updated inside inner class
@@ -133,7 +133,7 @@ class w10_2_SemanticEvent extends JFrame
 	contentpane.add(add_button);
 	contentpane.add(rem_button);
 	contentpane.add(combo);				// using combo (3)
-	//contentpane.add(rpanel);			// using radio buttons (4)
+	contentpane.add(rpanel);			// using radio buttons (4)
 	contentpane.add(drawpane);
 
 	validate();
@@ -155,7 +155,7 @@ class MyPane extends JPanel
     private java.util.Random  random;
     private int		      count = 1;
 
-    private String   path  = "src/main/Java/Lab_Ch10/";
+    private String   path  = "src/main/java/Lab_Ch10/";
     private String[] birds = {"black.png", "blue.png", "green.png", 
 		              "red.png", "white.png", "yellow.png"};
 

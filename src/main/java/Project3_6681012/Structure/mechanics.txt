@@ -13,4 +13,7 @@ Special Mechanics:
 	2) Cheating
 		2.1) back channel, you will be able to leave a message for other player (privately) to consipire against fellow player
 			- If you are caught you can't play for 2 round and your defenses are compromised along with the consipere.
-		2.2) card locking, maybe not?  
+		2.2) card locking, maybe not? 
+	
+Player:
+	Random 5 cards at the start of a round and player choose a target to attack on their turn. each player got 5 store slot attack using 3 card and consume 1 card and place 2 defenses. 

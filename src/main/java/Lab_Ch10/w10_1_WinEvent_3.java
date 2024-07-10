@@ -17,15 +17,15 @@ class w10_1_WinEvent_3 extends JFrame implements MouseListener
 
     public w10_1_WinEvent_3()
     {
-	setTitle("This is a Frame");
+        setTitle("This is a Frame");
         setSize(700, 400);
         setLocationRelativeTo(null);        
-	setVisible(true);
-	setDefaultCloseOperation( WindowConstants.EXIT_ON_CLOSE );
+        setVisible(true);
+        setDefaultCloseOperation( WindowConstants.EXIT_ON_CLOSE );
 
-	contentpane = (JPanel)getContentPane();
-	contentpane.setLayout( new FlowLayout() );
-	contentpane.setBackground( Color.GRAY );
+        contentpane = (JPanel)getContentPane();
+        contentpane.setLayout( new FlowLayout() );
+        contentpane.setBackground( Color.GRAY );
 
 	random = new java.util.Random();
 	
@@ -73,15 +73,15 @@ class w10_1_WinEvent_3 extends JFrame implements MouseListener
     @Override
     public void mouseClicked( MouseEvent e )	
     {
-	int r = random.nextInt(6);
-	JLabel label = new JLabel( new ImageIcon(path + birds[r]) );
-	contentpane.add( label );
-	validate();
+        int r = random.nextInt(6);
+        JLabel label = new JLabel( new ImageIcon(path + birds[r]) );
+        contentpane.add( label );
+        validate();
     }
 
     public static void main(String[] args) 
     {
-	new w10_1_WinEvent_3();
+        new w10_1_WinEvent_3();
     }
 };
 

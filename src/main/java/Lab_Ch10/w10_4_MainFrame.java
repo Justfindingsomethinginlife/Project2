@@ -95,7 +95,8 @@ class w10_4_MainFrame extends JFrame
 					@Override
 					public void actionPerformed( ActionEvent e )
 					{
-						pframe = new w10_5_PrintFrame();
+						if(pframe == null)pframe = new w10_5_PrintFrame();
+						else pframe.setVisible(true);
 
 						// ----- (7.2) get messages from components
 						//             no need to catch events in (3) and (4)
@@ -109,7 +110,7 @@ class w10_4_MainFrame extends JFrame
 					}
 			});
 
-			messageFromList = "JI";
+			// messageFromList = "JI";
 
 			JPanel mpanel = new JPanel();
 			mpanel.add( new JScrollPane(text) );
@@ -144,7 +145,7 @@ class w10_4_MainFrame extends JFrame
 				String look3 = "com.sun.java.swing.plaf.windows.WindowsLookAndFeel";
 				String look4 = "com.sun.java.swing.plaf.windows.WindowsClassicLookAndFeel";
 				String look5 = "javax.swing.plaf.nimbus.NimbusLookAndFeel";
-				UIManager.setLookAndFeel(look2);
+				UIManager.setLookAndFeel(look5);
 		}
 		catch (Exception e) { System.out.println(e); }
 

@@ -104,8 +104,8 @@ class w10_2_SemanticEvent extends JFrame
 
             radio[i].addItemListener( new ItemListener() {
                 @Override
-		public void itemStateChanged( ItemEvent e )
-		{
+            public void itemStateChanged( ItemEvent e )
+            {
                     JRadioButton temp = (JRadioButton)e.getItem();
                     if (temp.isSelected())
                     if (e.getStateChange() == ItemEvent.SELECTED)
@@ -117,7 +117,7 @@ class w10_2_SemanticEvent extends JFrame
                     }
                     //outsideloop++;        // updated inside inner class
                     //insideloop++;         // updated inside inner class
-		}
+            }
             });	
             
             

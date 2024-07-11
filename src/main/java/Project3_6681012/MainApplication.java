@@ -4,24 +4,69 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import java.util.*;
-import java.util.Objects;
 
 public class MainApplication extends JFrame 
 {
 	private int playerCount;
+	
 	private ArrayList<PlayerFrame> players;
+	private CharSelect	setup;
+	
+	private JPanel            contentpane;
+	private JComboBox         combo;
+    	private ButtonGroup       bgroup;
+    	private JButton           startButton;
+
+    private MainApplication   currentFrame;
 
 	public static void main(String []args)
 	{	
-		//new Welcome();
-		new MainApplication();
-		new PlayerFrame("NOSCPE");
+		//new MainApplication();
+		new CharSelect();
+		//new PlayerFrame("NOSCPE");
 	}
 
 	public MainApplication()
 	{
+		setTitle("Game");
+		setSize(1366, 768); 
+       		setLocationRelativeTo(null);
+		setVisible(true);
+		setDefaultCloseOperation( WindowConstants.DISPOSE_ON_CLOSE );
+        	currentFrame = this;
+        
+        	contentpane = (JPanel)getContentPane();
+		contentpane.setLayout( new BorderLayout(25,25) );        
 
+        	AddComponents();
 	}
+
+	public void AddComponents() {
+
+        	startButton = new JButton("Start Game");
+
+        	String[] diff = {"Easy", "Medium", "Hard"};
+        	combo = new JComboBox(diff);
+        	combo.setSelectedIndex(1);
+
+        	JLabel title = new JLabel("Card Knight", SwingConstants.CENTER);
+	        title.setFont(new Font("Monospaced", Font.PLAIN, 20));
+
+        	JPanel start = new JPanel();
+        	JPanel top = new JPanel();
+
+        	start.add(new JLabel("Difficulty: "), FlowLayout.CENTER);
+        	start.add(combo);
+			start.add(startButton);
+
+        	//contentpane.add(startButton, BorderLayout.SOUTH);
+		//contentpane.add(combo, BorderLayout.CENTER);
+		
+        	contentpane.add(title, BorderLayout.NORTH);
+        	contentpane.add(start, BorderLayout.CENTER);
+
+			contentpane.validate();
+    }
 	public void setPlayerCount(int count)			{ playerCount = count; }
 
 }
@@ -35,29 +80,63 @@ interface Myutils
 	public static int shield_holder_start_x = 1065;
 }
 
-class Welcome extends JFrame implements KeyListener 
-{
-	public Welcome()
+class CharSelect extends JFrame implements KeyListener 
+{	
+	private JPanel contentpane;
+
+	public CharSelect()
 	{
-		super("hi");
-		setSize(1366,768);	
+		setTitle("Character Setup");
+		setSize(1366, 768); 
+       		setLocationRelativeTo(null);
 		setVisible(true);
-		setLocationRelativeTo(null);
-		setDefaultCloseOperation( WindowConstants.EXIT_ON_CLOSE );
-		addKeyListener(this);
-		MyImageIcon bg = new MyImageIcon("src/main/java/Project3_6681012/resources/Welcome_Screen.png").resize(1366, 768);
+		setDefaultCloseOperation( WindowConstants.DISPOSE_ON_CLOSE );
 
-		JPanel contentpane = (JPanel)getContentPane();
-		JLabel background = new JLabel();
+		contentpane = (JPanel)getContentPane();
+		contentpane.setLayout(new BorderLayout(25,25));
 
-		background.setIcon(bg);
-		background.setLayout(null);
+		addComponent();
+	}
+	public void addComponent()
+	{
+		JLabel title = new JLabel("Choose Your Champion", SwingConstants.CENTER);
+		title.setFont(new Font("Monospaced", Font.PLAIN, 20));
+		
+        JRadioButton [] radio = new JRadioButton[4];
+        JPanel rpanel	   = new JPanel();
+        ButtonGroup rgroup = new ButtonGroup();
+        int outsideloop    = 0;
+        for (int i=0; i < 4; i++) 
+        {
+            // treated as different (final) variables in different iterations
+            // new value can be assigned but only in declaration statement
+            int insideloop = i;
+            
+            radio[i] = new JRadioButton( items[i].toString() );
+            if (i == 0) radio[i].setSelected(true);
+            rgroup.add( radio[i] );
+            rpanel.add( radio[i] );
 
-		contentpane.add(background);
+            radio[i].addItemListener( new ItemListener() {
+                @Override
+            	public void itemStateChanged( ItemEvent e )
+            	{
+                    JRadioButton temp = (JRadioButton)e.getItem();
+                    if (temp.isSelected())
+                    if (e.getStateChange() == ItemEvent.SELECTED)
+                    {
+                        System.out.printf("outside = %d, inside = %d \n", outsideloop, insideloop);
+                        
+                        int count = Integer.parseInt( temp.getText() );
+                    }
+	    	}
+            });	
+		contentpane.add(rpanel, BorderLayout.CENTER);
+		contentpane.add(title, BorderLayout.NORTH);
 		contentpane.validate();
 	}
 	
-	public void keyPressed(KeyEvent e)			{dispose();}
+	public void keyPressed(KeyEvent e)			{ dispose(); }
 	public void keyReleased(KeyEvent e)			{}
 	public void keyTyped(KeyEvent e)			{}
 }
@@ -278,10 +357,7 @@ class PlayerFrame extends JFrame implements MouseListener
     	public void mouseEntered( MouseEvent e )			{ }
     	public void mouseExited( MouseEvent e )				{ }
     	public void mouseMoved( MouseEvent e )				{ }
-    	public void mouseClicked( MouseEvent e )			{ }
-	
-
-
+    	public void mouseClicked( MouseEvent e )			{ }	
     	public void mouseReleased( MouseEvent e )			{ }
 
 }
